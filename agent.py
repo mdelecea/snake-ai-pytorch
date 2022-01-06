@@ -22,47 +22,77 @@ class Agent:
 
 
     def get_state(self, game):
-        head = game.snake[0]
-        point_l = Point(head.x - 20, head.y)
-        point_r = Point(head.x + 20, head.y)
-        point_u = Point(head.x, head.y - 20)
-        point_d = Point(head.x, head.y + 20)
-        
-        dir_l = game.direction == Direction.LEFT
-        dir_r = game.direction == Direction.RIGHT
-        dir_u = game.direction == Direction.UP
-        dir_d = game.direction == Direction.DOWN
 
-        state = [
+        point_l, point_r, point_u, point_d = [], [], [], []
+        dir_l, dir_r, dir_u, dir_d = [], [], [], []
+        for snake in game.snakeList: 
+            #find point of snake
+            point_l.append(Point(snake.head.x - 20, snake.head.y)) 
+            point_r.append(Point(snake.head.x + 20, snake.head.y))
+            point_u.append(Point(snake.head.x, snake.head.y - 20))
+            point_d.append(Point(snake.head.x, snake.head.y + 20))
+            #find current direction of snake
+            dir_l.append(snake.direction == Direction.LEFT) 
+            dir_r.append(snake.direction == Direction.RIGHT)
+            dir_u.append(snake.direction == Direction.UP)
+            dir_d.append(snake.direction == Direction.DOWN)
+        
+        danger_s = [None]*len(game.snakeList)
+        danger_r = [None]*len(game.snakeList)
+        danger_l = [None]*len(game.snakeList)
+
+        for i in range(len(game.snakeList)):
             # Danger straight
-            (dir_r and game.is_collision(point_r)) or 
-            (dir_l and game.is_collision(point_l)) or 
-            (dir_u and game.is_collision(point_u)) or 
-            (dir_d and game.is_collision(point_d)),
+            danger_s[i] = (dir_r[i] and game.is_collision(point_r)) or ...
+            (dir_l[i] and game.is_collision(point_l)) or ...
+            (dir_u[i] and game.is_collision(point_u)) or ...
+            (dir_d[i] and game.is_collision(point_d)),
 
             # Danger right
-            (dir_u and game.is_collision(point_r)) or 
-            (dir_d and game.is_collision(point_l)) or 
-            (dir_l and game.is_collision(point_u)) or 
-            (dir_r and game.is_collision(point_d)),
+            danger_r[i] = (dir_u[i] and game.is_collision(point_r)) or ...
+            (dir_d[i] and game.is_collision(point_l)) or ...
+            (dir_l[i] and game.is_collision(point_u)) or ...
+            (dir_r[i] and game.is_collision(point_d)),
 
             # Danger left
-            (dir_d and game.is_collision(point_r)) or 
-            (dir_u and game.is_collision(point_l)) or 
-            (dir_r and game.is_collision(point_u)) or 
-            (dir_l and game.is_collision(point_d)),
+            danger_l[i] = (dir_d[i] and game.is_collision(point_r)) or ...
+            (dir_u[i] and game.is_collision(point_l)) or ...
+            (dir_r[i] and game.is_collision(point_u)) or ...
+            (dir_l[i] and game.is_collision(point_d)),
+            
+
+        # Food location
+        manhat_dist = []
+        food_direction = [False, False, False, False]
+        for snake in game.snakeList:
+            manhat_dist.append(abs(snake.head.x - game.food.x) + abs(snake.head.y - game.food.y))
+        close_snake = manhat_dist.index(min(manhat_dist))
+        if game.snakeList[close_snake].head.x > game.food.x: #Left
+            food_direction[0] = True
+        if game.snakeList[close_snake].head.x < game.food.x: #Right
+            food_direction[1] = True
+        if game.snakeList[close_snake].head.y < game.food.y: #Up
+            food_direction[2] = True
+        if game.snakeList[close_snake].head.y > game.food.y: #Down
+            food_direction[3] = True
+
+        state = [
+            # Danger in direction
+            True in danger_s,
+            True in danger_r,
+            True in danger_l,
             
             # Move direction
-            dir_l,
-            dir_r,
-            dir_u,
-            dir_d,
-            
-            # Food location 
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y  # food down
+            dir_l[0],
+            dir_r[0],
+            dir_u[0],
+            dir_d[0],
+
+            # Food location
+            food_direction[0],
+            food_direction[1],
+            food_direction[2],
+            food_direction[3]
             ]
 
         return np.array(state, dtype=int)
@@ -78,15 +108,13 @@ class Agent:
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
-        #for state, action, reward, nexrt_state, done in mini_sample:
-        #    self.trainer.train_step(state, action, reward, next_state, done)
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 80 - self.n_games
+        self.epsilon = max(200 - self.n_games,10)
         final_move = [0,0,0]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 2)
@@ -128,6 +156,7 @@ def train():
             # train long memory, plot result
             game.reset()
             agent.n_games += 1
+            #if np.not_equal(state_new.all(),state_old.all()):
             agent.train_long_memory()
 
             if score > record:

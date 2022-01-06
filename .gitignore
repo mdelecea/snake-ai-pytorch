@@ -1,0 +1,6 @@
+__pycache__/game.cpython-39.pyc
+__pycache__/helper.cpython-39.pyc
+__pycache__/model.cpython-39.pyc
+model/model.pth
+.vscode/launch.json
+*.jpeg
