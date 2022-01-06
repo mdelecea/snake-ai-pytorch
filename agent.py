@@ -5,6 +5,7 @@ from collections import deque
 from game import SnakeGameAI, Direction, Point
 from model import Linear_QNet, QTrainer
 from helper import plot
+import pygame
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -83,10 +84,10 @@ class Agent:
             True in danger_l,
             
             # Move direction
-            dir_l[0],
-            dir_r[0],
-            dir_u[0],
-            dir_d[0],
+            dir_l[close_snake],
+            dir_r[close_snake],
+            dir_u[close_snake],
+            dir_d[close_snake],
 
             # Food location
             food_direction[0],
@@ -151,6 +152,8 @@ def train():
 
         # remember
         agent.remember(state_old, final_move, reward, state_new, done)
+
+        #pygame.image.save(game.display, str(agent.n_games)+"."+str(game.frame_iteration)+".jpeg")
 
         if done:
             # train long memory, plot result

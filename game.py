@@ -6,7 +6,7 @@ import numpy as np
 
 pygame.init()
 font = pygame.font.SysFont('arial', 25)
-NUM_SNAKES = 4
+NUM_SNAKES = 2
 
 class Direction(Enum):
     RIGHT = 1
@@ -87,7 +87,9 @@ class SnakeGameAI:
     def reset(self):
         # init game state
         self.snakeList = []
-        direction = random.choice([Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP])
+        #Change to None for each snake to have a different starting direction, otherwise all snakes start in the same direction
+        #direction = random.choice([Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP])
+        direction = None
         for i in range(NUM_SNAKES):
             self.snakeList.append(Snake(self.w, self.h, direction))
 
@@ -98,8 +100,6 @@ class SnakeGameAI:
 
 
     def _place_food(self):
-        #x = random.randint(0, (self.w-BLOCK_SIZE )//BLOCK_SIZE )*BLOCK_SIZE
-        #y = random.randint(0, (self.h-BLOCK_SIZE )//BLOCK_SIZE )*BLOCK_SIZE
         # randomize food location
         x = random.randint(self.w//(4*BLOCK_SIZE),3*self.w//(4*BLOCK_SIZE))*BLOCK_SIZE
         y = random.randint(self.h//(4*BLOCK_SIZE),3*self.h//(4*BLOCK_SIZE))*BLOCK_SIZE 
@@ -111,7 +111,6 @@ class SnakeGameAI:
 
     def play_step(self, action):
         self.frame_iteration += 1
-        pygame.image.save(self.display, "screenshot"+str(self.frame_iteration)+".jpeg")
         # 1. collect input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -127,7 +126,7 @@ class SnakeGameAI:
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 500*max(snake.body.__len__() for snake in self.snakeList):
+        if self.is_collision() or self.frame_iteration > 100*max(snake.body.__len__() for snake in self.snakeList):
             game_over = True
             reward = -10
             return reward, game_over, self.score
@@ -154,18 +153,18 @@ class SnakeGameAI:
             pt = []
             for snake in self.snakeList:
                 pt.append(snake.head)
-        #else: # hits itself or others
-        #    for snake in self.snakeList:
-        #        if not set(pt).isdisjoint(snake.body):
-        #            return True
+        else: # hits itself or others
+           for snake in self.snakeList:
+                if not set(pt).isdisjoint(snake.body):
+                    return True
         # hits boundary
         for p in pt:
-            if p.x > self.w - BLOCK_SIZE or p.x < 0 or p.y > self.h - BLOCK_SIZE or p.y < 0:
+            if p.x > 1*(self.w - BLOCK_SIZE) or p.x < 0*(self.w - BLOCK_SIZE) or p.y > 1*(self.h - BLOCK_SIZE) or p.y < 0*(self.h - BLOCK_SIZE):
                 return True
         # hits itself or others
-        #for snake in self.snakeList:
-        #    if not set(pt).isdisjoint(snake.body[1:]):
-        #            return True
+        for snake in self.snakeList:
+            if not set(pt).isdisjoint(snake.body[1:]):
+                    return True
         return False
 
 
